@@ -1,33 +1,47 @@
 {
   "name": "linkedinclone",
   "version": "1.0.0",
-  "main": "backend/server.js",
+  "main": "backend/src/server.js",
   "scripts": {
-    "dev": "nodemon backend/server.js",
-    "start": "node backend/server.js",
-    "build": "npm install && npm install --prefix frontend && npm run build --prefix frontend"    
+    "dev": "concurrently -n api,web -c blue,magenta \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "nodemon --watch backend/src backend/src/server.js",
+    "dev:client": "npm run dev --prefix frontend",
+    "start": "node backend/src/server.js",
+    "build": "npm install && npm install --prefix frontend && npm run build --prefix frontend",
+    "seed": "node backend/src/scripts/seed.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "npm run lint --prefix frontend"
   },
   "keywords": [],
   "author": "",
   "type": "module",
   "license": "ISC",
-  "description": "",
+  "description": "UnLinked - a LinkedIn-style professional network built with the MERN stack",
   "dependencies": {
-    "@tanstack/react-query": "^5.60.2",
     "bcryptjs": "^2.4.3",
-    "cloudinary": "^2.5.1",
+    "cloudinary": "^2.11.0",
     "cookie-parser": "^1.4.7",
-    "cors": "^2.8.5",
-    "date-fns": "^4.1.0",
-    "dotenv": "^16.4.5",
-    "express": "^4.21.1",
-    "express-router": "^0.0.1",
-    "jsonwebtoken": "^9.0.2",
-    "lucide-react": "^0.456.0",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
     "mailtrap": "^3.4.0",
-    "mongoose": "^8.8.1"
+    "mongoose": "^8.24.5",
+    "morgan": "^1.12.1",
+    "socket.io": "^4.8.4",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
-    "nodemon": "^3.1.7"
+    "concurrently": "^10.0.6",
+    "mongodb-memory-server": "^11.3.0",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.3.1",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=20.19"
   }
 }
