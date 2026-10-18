@@ -1,118 +1,105 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { axiosInstance } from "../../lib/axios";
-import { Link } from "react-router-dom";
-import { Bell, Home, LogOut, User, Users } from "lucide-react";
+import { useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router";
+import { Bookmark, BriefcaseBusiness, ChevronDown, LogOut, MessageSquareText, Moon, Search, Settings, Sun, UserRound, X } from "lucide-react";
+import Avatar from "../ui/Avatar";
+import Menu from "../ui/Menu";
+import SearchBar from "../../features/search/SearchBar";
+import { useCurrentUser } from "../../hooks/useAuth";
+import { useTheme } from "../../context/ThemeContext";
+import { useLogout } from "../../features/auth/api";
+import CountBadge from "./CountBadge";
+import { NAV_ITEMS, useNavCounts } from "./navigation";
+import { cn } from "../../lib/utils";
 
 const Navbar = () => {
-  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
-  const queryClient = useQueryClient();
+    const user = useCurrentUser();
+    const counts = useNavCounts();
+    const { resolved, setPreference } = useTheme();
+    const { mutate: logout } = useLogout();
+    const navigate = useNavigate();
+    const [mobileSearch, setMobileSearch] = useState(false);
 
-  const { data: notifications } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: async () => axiosInstance.get("/notifications"),
-    enabled: !!authUser,
-  });
+    return (
+        <header className="sticky top-0 z-40 bg-base-100 border-b border-base-300">
+            <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-3">
+                {mobileSearch ? (
+                    <>
+                        <SearchBar className="flex-1" onNavigate={() => setMobileSearch(false)} />
+                        <button className="btn btn-ghost btn-sm btn-circle" onClick={() => setMobileSearch(false)} aria-label="Close search">
+                            <X className="size-5" />
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <Link to="/" className="shrink-0" aria-label="UnLinked home">
+                            <img src="/logo-mark.svg" alt="UnLinked" className="size-9 rounded" />
+                        </Link>
+                        <SearchBar className="hidden sm:block w-64 lg:w-72" />
 
-  const { data: connectionRequests } = useQuery({
-    queryKey: ["connectionRequests"],
-    queryFn: async () => axiosInstance.get("/connections/requests"),
-    enabled: !!authUser,
-  });
+                        <nav className="ml-auto flex items-center">
+                            {NAV_ITEMS.map(({ to, label, icon: Icon, end, count }) => (
+                                <NavLink
+                                    key={to}
+                                    to={to}
+                                    end={end}
+                                    className={({ isActive }) =>
+                                        cn(
+                                            "hidden md:flex flex-col items-center gap-0.5 px-3 lg:px-4 h-14 justify-center text-xs border-b-2 transition-colors",
+                                            isActive
+                                                ? "border-base-content text-base-content"
+                                                : "border-transparent text-muted hover:text-base-content"
+                                        )
+                                    }
+                                >
+                                    <span className="relative">
+                                        <Icon className="size-6" />
+                                        <CountBadge count={counts[count]} />
+                                    </span>
+                                    <span className="hidden lg:block">{label}</span>
+                                </NavLink>
+                            ))}
 
-  const { mutate: logout } = useMutation({
-    mutationFn: () => axiosInstance.post("/auth/logout"),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["authUser"] });
-    },
-  });
+                            <button
+                                className="btn btn-ghost btn-circle btn-sm sm:hidden"
+                                onClick={() => setMobileSearch(true)}
+                                aria-label="Search"
+                            >
+                                <Search className="size-5" />
+                            </button>
+                            <Link to="/messaging" className="btn btn-ghost btn-circle btn-sm md:hidden relative" aria-label="Messaging">
+                                <MessageSquareText className="size-5" />
+                                <CountBadge count={counts.messages} className="left-auto right-0 -top-1" />
+                            </Link>
 
-  const unreadNotificationCount = notifications?.data.filter(
-    (notif) => !notif.read
-  ).length;
-  const unreadConnectionRequestsCount = connectionRequests?.data?.length;
-
-  return (
-    <nav className="bg-secondary shadow-md sticky top-0 z-10">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between items-center py-3">
-          <div className="flex items-center space-x-4">
-            <Link to="/">
-              <img
-                className="h-8 rounded"
-                src="/small-logo.png"
-                alt="LinkedIn"
-              />
-            </Link>
-          </div>
-          <div className="flex items-center gap-2 md:gap-6">
-            {authUser ? (
-              <>
-                <Link
-                  to={"/"}
-                  className="text-neutral flex flex-col items-center"
-                >
-                  <Home size={20} />
-                  <span className="text-xs hidden md:block">Home</span>
-                </Link>
-                <Link
-                  to="/network"
-                  className="text-neutral flex flex-col items-center relative"
-                >
-                  <Users size={20} />
-                  <span className="text-xs hidden md:block">My Network</span>
-                  {unreadConnectionRequestsCount > 0 && (
-                    <span
-                      className="absolute -top-1 -right-1 md:right-4 bg-blue-500 text-white text-xs 
-										rounded-full size-3 md:size-4 flex items-center justify-center"
-                    >
-                      {unreadConnectionRequestsCount}
-                    </span>
-                  )}
-                </Link>
-                <Link
-                  to="/notifications"
-                  className="text-neutral flex flex-col items-center relative"
-                >
-                  <Bell size={20} />
-                  <span className="text-xs hidden md:block">Notifications</span>
-                  {unreadNotificationCount > 0 && (
-                    <span
-                      className="absolute -top-1 -right-1 md:right-4 bg-blue-500 text-white text-xs 
-										rounded-full size-3 md:size-4 flex items-center justify-center"
-                    >
-                      {unreadNotificationCount}
-                    </span>
-                  )}
-                </Link>
-                <Link
-                  to={`/profile/${authUser.username}`}
-                  className="text-neutral flex flex-col items-center"
-                >
-                  <User size={20} />
-                  <span className="text-xs hidden md:block">Me</span>
-                </Link>
-                <button
-                  className="flex items-center space-x-1 text-sm text-gray-600 hover:text-gray-800"
-                  onClick={() => logout()}
-                >
-                  <LogOut size={20} />
-                  <span className="hidden md:inline">Logout</span>
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="btn btn-ghost">
-                  Sign In
-                </Link>
-                <Link to="/signup" className="btn btn-primary">
-                  Join now
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </nav>
-  );
+                            <Menu
+                                className="ml-1 md:border-l md:border-base-300 md:pl-3"
+                                trigger={({ toggle }) => (
+                                    <button onClick={toggle} className="flex flex-col items-center text-xs text-muted hover:text-base-content" aria-label="Account menu">
+                                        <Avatar user={user} size="xs" />
+                                        <span className="hidden lg:flex items-center">
+                                            Me <ChevronDown className="size-3.5" />
+                                        </span>
+                                    </button>
+                                )}
+                                items={[
+                                    { label: "View profile", icon: UserRound, onClick: () => navigate(`/profile/${user.username}`) },
+                                    { label: "Saved posts", icon: Bookmark, onClick: () => navigate("/saved") },
+                                    { label: "My jobs", icon: BriefcaseBusiness, onClick: () => navigate("/jobs/my") },
+                                    {
+                                        label: resolved === "dark" ? "Light mode" : "Dark mode",
+                                        icon: resolved === "dark" ? Sun : Moon,
+                                        onClick: () => setPreference(resolved === "dark" ? "light" : "dark"),
+                                    },
+                                    { label: "Settings", icon: Settings, onClick: () => navigate("/settings") },
+                                    { label: "Sign out", icon: LogOut, onClick: () => logout(), danger: true },
+                                ]}
+                            />
+                        </nav>
+                    </>
+                )}
+            </div>
+        </header>
+    );
 };
+
 export default Navbar;
